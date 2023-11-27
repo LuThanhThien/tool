@@ -45,6 +45,9 @@ async function filterDisplay(page, account, keyword=config.filterKeyword, displa
       document.getElementsByName(filterInputHTML)[0].value = keyword
       }
    }, displaySelectBoxHTML, displayOptionHTML, filterInputHTML, keyword)
+   await page.focus(`input[name="${filterInputHTML}"]`)
+   await page.keyboard.press('Enter')
+   await page.waitForNavigation()
    statTime = utils.elapsedTime(startTime, account, "Filter finished")
 }
 
@@ -176,10 +179,7 @@ async function formAutoFiller(newPage, account, i, capture=false, test=false) {
             document.getElementsByName(phoneNumberHTML)[0].value = config.infoFake.phoneNumberHash[Math.random() * config.infoFake.phoneNumberHash.length | 0]
             document.getElementsByName(nationHTML)[0].value = config.infoFake.nation[Math.random() * config.infoFake.nation.length | 0]
             document.getElementsByName(countryHTML)[0].value = config.infoFake.country[Math.random() * config.infoFake.country.length | 0]
-            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach((checkbox) => {
-               checkbox.checked = true;
-            });
+            document.querySelectorAll('input[type="checkbox"]')[0].checked = true
          }
       }, config, test, i)
 
