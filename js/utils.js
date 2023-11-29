@@ -99,6 +99,9 @@ function initLog() {
 }
 
 async function aborting(page) {
+   // Remove existing listeners
+   page.removeAllListeners('request');
+
    await page.setRequestInterception(true);
    page.on('request', (req) => {
       if (req.resourceType() === 'stylesheet' || req.resourceType() === 'font' || req.resourceType() === 'image'){
@@ -110,6 +113,7 @@ async function aborting(page) {
    });
 }
 
+
 async function captureHTML(page, name='page.mhtml') {  
    try {  
      const data = await page.content();
@@ -117,6 +121,26 @@ async function captureHTML(page, name='page.mhtml') {
    } 
    catch (err) { console.error(err) } 
  }
+
+
+ function isTodayOrPast(stringDate) {
+   const matchDate = stringDate.match(/(\d{4})年(\d{1,2})月(\d{1,2})日 (\d{2})時(\d{2})分/);
+   const year = parseInt(matchDate[1], 10);
+   const month = parseInt(matchDate[2], 10) - 1; // JavaScript months are 0-indexed
+   const day = parseInt(matchDate[3], 10);
+   const hour = parseInt(matchDate[4], 10);
+   const minute = parseInt(matchDate[5], 10);
+
+   // Create a date object from the target date
+   const targetDate = new Date(year, month, day, 0, 0);
+
+   // Get the current date and time
+   const currentDate = new Date();
+
+   // Compare the target date with the current date and time
+   return targetDate.getTime() <= currentDate.getTime();
+}
+
 
 // Create an object to hold all exported functions
 module.exports = {
@@ -127,6 +151,13 @@ module.exports = {
    aborting,
    getAllNames,
    captureHTML,
+   isTodayOrPast,
  }
  
+
  
+ // Example usage:
+ const targetDate = '2023年11月30日 07時30分'; // Replace with your specific date
+ const result = isTodayOrPast(targetDate);
+ 
+ console.log(result); 
