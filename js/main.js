@@ -31,23 +31,20 @@ async function logIn(page, account) {
 async function filterDisplay(page, account, keyword=config.filterKeyword, displayNumber=config.displayNumber) {
    const filterInputHTML = "templateName"
    const displaySelectBoxHTML = "top_ken_selectbox"
-   const displayOptionHTML = `offerList_movePage?dispPage=${displayNumber}`
+   const disp50Url = `https://www.shinsei.e-aichi.jp/pref-aichi-police-u/offer/offerList_movePage?dispPage=${displayNumber}`
+
 
    let startTime = utils.elapsedTime(0)
-   await page.evaluate( (displaySelectBoxHTML, displayOptionHTML, filterInputHTML, keyword) => {
-      // filter to 50 forms
-      const selectedElement = document.getElementById(displaySelectBoxHTML)
-      for (const option of selectedElement.options) {
-         if (option.value === displayOptionHTML) {
-           option.selected = true;
-           break;
-         }
+   await page.evaluate( (filterInputHTML, keyword) => {
       document.getElementsByName(filterInputHTML)[0].value = keyword
-      }
-   }, displaySelectBoxHTML, displayOptionHTML, filterInputHTML, keyword)
+      // filter to 50 forms
+   }, filterInputHTML, keyword)
    await page.focus(`input[name="${filterInputHTML}"]`)
    await page.keyboard.press('Enter')
    await page.waitForNavigation()
+
+   await page.goto(disp50Url);
+
    statTime = utils.elapsedTime(startTime, account, "Filter finished")
 }
 
@@ -55,7 +52,8 @@ async function filterDisplay(page, account, keyword=config.filterKeyword, displa
 async function findAll(page, account, keyword=config.filterKeyword, ignoreNullLink=false) {
    // derive array of all forms
    let startTime = utils.elapsedTime(0)
-   const array = await page.evaluate(async () => {
+   const array = await page.evaluate(async (isToday) => {
+      const isTodayFnc = new Function(`return ${isToday}`)();
       const listItemsHTML = '.c-box--cardList__item'
       const titleHTML = '.c-box--cardList__item_h4'
       const statusHTML = '.c-box--cardList__item__status'
@@ -63,12 +61,12 @@ async function findAll(page, account, keyword=config.filterKeyword, ignoreNullLi
       const endDateHTML = '.span-display-flex'
       const templateSeqHTML = 'input[type="hidden"]'
       const linkHTML = 'a'
-
+      const linkPrefix = "https://www.shinsei.e-aichi.jp/pref-aichi-police-u/offer/offerList_detailTop?tempSeq="
       return Array.from(document.querySelectorAll(listItemsHTML), li => {
          const titleElement = li.querySelector(titleHTML)
          const statusElement = li.querySelector(statusHTML)
-         const startDateElement = li.querySelectorAll(startDateHTML)[0]
-         const endDateElement = li.querySelectorAll(endDateHTML)[1]
+         const startDateElement = li.querySelectorAll(startDateHTML)[1]
+         const endDateElement = li.querySelectorAll(endDateHTML)[3]
          const templateSeqElement = li.querySelector(templateSeqHTML)
          const linkElement = li.querySelector(linkHTML)
          return {
@@ -77,10 +75,12 @@ async function findAll(page, account, keyword=config.filterKeyword, ignoreNullLi
             startDate: startDateElement ? startDateElement.textContent.replace(/\s+/g, ' ').trim() : null,
             endDate: endDateElement ? endDateElement.textContent.replace(/\s+/g, ' ').trim() : null,
             templateSeq: templateSeqElement ? templateSeqElement.value : null,
-            link: linkElement ? linkElement.href : null,
+            link: linkPrefix + templateSeqElement.value,
+            isAvailable: linkElement ? true : false,
+            isToday: isTodayFnc(startDateElement.textContent.replace(/\s+/g, ' ').trim()),
          }
       })
-   })
+   }, utils.isTodayOrPast.toString())
 
    // console.log(array)
    let availableItem = array // take all forms                       
@@ -88,14 +88,20 @@ async function findAll(page, account, keyword=config.filterKeyword, ignoreNullLi
       // console.log('Deep filter with keyword: ' + keyword)
       availableItem = availableItem.filter(item => item.title.includes(keyword))    // deep-filter with exact keyword
    }
-   if (!ignoreNullLink) {
-      // console.log('Not ignore null link')
-      availableItem = availableItem.filter(item => item.link !== null)              // take only clickable form
-   }
+   // if (!ignoreNullLink) {
+   //    // console.log('Not ignore null link')
+   //    availableItem = availableItem.filter(item => item.link !== null)              // take only clickable forms
+   // }
+   const upcomingStatus = "近日受付開始"
+   const passedStatus = "受付終了しました"
+   const endedStatus = "終了しました"
 
+   availableItem = availableItem.filter(item => item.status !== passedStatus)          // ignore passed forms
+   availableItem = availableItem.filter(item => item.status !== endedStatus)          // ignore passed forms
+   availableItem = availableItem.filter(item => item.isToday === true)                 // ignore future forms
+   
    // console.log(availableItem)
-   startTime = utils.elapsedTime(startTime, account, "Total links found: " + availableItem.length)
-   startTime = utils.elapsedTime(startTime, account, "Find all available finished")
+   startTime = utils.elapsedTime(startTime, account, "Find available finished. Total links found: " + availableItem.length)
 
    return availableItem
 }
@@ -119,22 +125,97 @@ async function renitiate(page, num, keyword=config.filterKeyword, ignoreNullLink
    return listForms
 }
 
-async function formAutoFiller(newPage, account, i, capture=false, test=false) {   
-   const logPath = `${config.logFolderName}/${account.username}` // path to save log
+function distributeForms(listForms, accounts, maxForms=3) {
+   // shuffle the listForms array and select the first 3 forms
+   let disAccounts = []
+   for (let i = 0; i < accounts.length; i++) {
+      for (let i = listForms.length - 1; i > 0; i--) {
+         const j = Math.floor(Math.random() * (i + 1));
+         [listForms[i], listForms[j]] = [listForms[j], listForms[i]];
+      }
+      let numForms = 0
+      for (let j = 0; j < listForms.length; j++) {
+         if (numForms >= maxForms) {
+            break
+         }
+         const distributedForms = {
+            username: accounts[i].username,
+            password: accounts[i].password,
+            form: listForms[j],
+         }
+         disAccounts.push(distributedForms)
+         numForms++
+      }
+      
+   }
+   return disAccounts
+}
 
+
+async function checkAvailability(page, account, form, i) {
+   let startTime = utils.elapsedTime(0)
+   const passedStatus = "大変申し訳ございません。申込数が上限に達した為、締め切らせていただきました。"
+   const upcomingStatus = "申込期間ではありません。"
+   let avaiStatus = await page.evaluate(() => {
+      const errorMessageElement = document.querySelector('.errorMessage');
+      return errorMessageElement ? errorMessageElement.textContent.trim() : null;
+    })
+
+   // console.log(avaiStatus)
+   if (avaiStatus === upcomingStatus) {
+      startTime = utils.elapsedTime(startTime, account, `Form [${i+1}] is upcoming, start at: ${form.startDate}`)
+      return 'upcoming'
+   }
+   else if (avaiStatus === passedStatus) {
+      startTime = utils.elapsedTime(startTime, account, `Form [${i+1}] is out of date, started at: ${form.startDate}`)
+      return 'passed'
+   }
+   else if (avaiStatus === null) {
+      startTime = utils.elapsedTime(startTime, account, `Form [${i+1}] is available now, started at: ${form.startDate}`)
+      return 'available'
+   }
+}
+
+
+async function formAutoFiller(newPage, account, form, i, capture=false, test=false) { 
+   let startTime = utils.elapsedTime(0)  
+   const logPath = `${config.logFolderName}/${account.username}` // path to save log
+   const maxRetry = 1000
+   let retry = 0
+   // check if form is available
+   let isAvailable = await checkAvailability(newPage, account, form, i)
+   while (isAvailable === 'upcoming') {
+      await newPage.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });    // reload page
+      isAvailable = await checkAvailability(newPage, account, form, i)
+      if (isAvailable === 'passed') {
+         return false
+      }
+      else if (isAvailable === 'available') {
+         break
+      }
+      else if (retry >= maxRetry) {
+         startTime = utils.elapsedTime(startTime, account, `Exceed max retry form [${i+1}]`)
+         return false
+      }
+      retry++
+   }
+   
    // 1. click agree, go to form link
    if (capture) {await newPage.screenshot({path: `${logPath}/form-[${i+1}]-begin.png`, fullPage: true})}
    try {
       await newPage.evaluate(() => {
-         const okBtnHTML = 'ok'
+         const okBtnHTML = 'ok'  
          const okBtn = document.getElementById(okBtnHTML)
          okBtn.click()
       })
       await newPage.waitForNavigation()
-      await utils.captureHTML(newPage, `${logPath}/form-[${i+1}]-form.html`)
+      // await utils.captureHTML(newPage, `${logPath}/form-[${i+1}]-form.html`)
    }
    catch (err) {
+      startTime = utils.elapsedTime(startTime, account, `ERROR FORM [${i+1}]: Agree button not found`)
       console.log(err)
+      return false
+
    }
    // await utils.getAllNames(newPage)
 
@@ -190,7 +271,9 @@ async function formAutoFiller(newPage, account, i, capture=false, test=false) {
       await newPage.waitForNavigation()
    }
    catch (err) {
-      startTime = utils.elapsedTime(startTime, account, `ERROR FORM [${i+1}]: Form not found or data not valid - ${err}`)
+      startTime = utils.elapsedTime(startTime, account, `ERROR FORM [${i+1}]: Form not found or data not valid`)
+      console.log(err)
+      return false
    }
 
    // 3. click confirm, go to finish page
@@ -207,7 +290,9 @@ async function formAutoFiller(newPage, account, i, capture=false, test=false) {
       if (capture) {await newPage.screenshot({path: `${logPath}/form-[${i+1}]-end.png`, fullPage: true})}
    }
    catch (err) {
-      startTime = utils.elapsedTime(startTime, account, `ERROR FORM [${i+1}]: Confirm button not found - ${err}`)
+      startTime = utils.elapsedTime(startTime, account, `ERROR FORM [${i+1}]: Confirm button not found`)
+      console.log(err)
+      return false
    }
 
    // 4. check if success or fail
@@ -312,6 +397,8 @@ async function dropAll(page, account, capture=false) {
 module.exports = {
    initiate,
    renitiate,
+   distributeForms,  
+   checkAvailability,
    logIn,
    filterDisplay,
    findAll,

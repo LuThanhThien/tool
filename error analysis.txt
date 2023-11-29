@@ -1,0 +1,2 @@
+- Return false if form is closed
+- Keep running (reload) if target form is about to open
