@@ -80,11 +80,12 @@ async function tool(keyword='Hirabari', capture=false, maxRenit=10000) {
       }
    }
    startTimeAll = utils.elapsedTime(startTimeAll, null, `Found ${listForms.length} avaliable forms`)
-   console.log(listForms)
+   // console.log(listForms)
    
    // auto fill form
    await Promise.all(disPages.map(async (loggedPage, pageIndex) => {
       // params 
+      let startTimeInner = utils.elapsedTime(0)
       const thisAccount = loggedPage.account
       const thisBrowser = loggedPage.browser
       const thisInfo = loggedPage.info
@@ -99,25 +100,25 @@ async function tool(keyword='Hirabari', capture=false, maxRenit=10000) {
 
       // auto fill form 
       let totalForms = 3
-      for (i=0; i<listForms.length; i++) {
-         startTimeInner = utils.elapsedTime(startTimeAll, thisAccount, `Auto fill form [${i+1}] begin: ${listForms[i].title}`)
+      let n = 0
+      while (totalForms > 0 && n < listForms.length) {
+         const thisForm = listForms[n]
+         startTimeInner = utils.elapsedTime(startTimeInner, thisAccount, `Auto fill form [${n+1}] begin: ${thisForm.title}`)
          const newPage = await thisBrowser.newPage()
-         await newPage.goto(listForms[i].link)
+         await newPage.goto(thisForm.link)
          await utils.aborting(newPage)
-         const isFail = await formAutoFiller(newPage, thisAccount, listForms[i], i, capture, test, thisInfo[totalForms-1])                            
+         const isFail = await formAutoFiller(newPage, thisAccount, thisForm, n, capture, test, thisInfo[totalForms-1])                            
          await newPage.close()
-         startTimeInner = utils.elapsedTime(startTimeInner, thisAccount, `Auto fill form [${i+1}] finished - ${isFail ? 'FAILED' : 'SUCCESS'}`)        
+         startTimeInner = utils.elapsedTime(startTimeInner, thisAccount, `Auto fill form [${n+1}] finished - ${isFail ? 'FAILED' : 'SUCCESS'}`)        
          if (isFail) {
-            const fail = {account: thisAccount.username, number: i+1, title: listForms[i].title}
+            const fail = {account: thisAccount.username, number: n+1, title: thisForm.title}
             failStore.push(fail)
          }          
          else {
             totalForms--
             totalSuccess++
-            if (totalForms === 0) {
-               break
-            }
          }
+         n++
       }
       thisBrowser.close()  
       startTimeInner = utils.elapsedTime(startTimeInner, thisAccount, "Account finished - END")

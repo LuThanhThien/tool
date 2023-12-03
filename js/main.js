@@ -186,7 +186,7 @@ async function checkAvailability(page, account, form, i) {
 async function formAutoFiller(newPage, account, form, i, capture=false, test=false, info=null) { 
    let startTime = utils.elapsedTime(0)  
    const logPath = `${config.logFolderName}/${account.username}` // path to save log
-   const maxRetry = 10000
+   const maxRetry = 0
    let retry = 0
    // check if form is available
    let isAvailable = await checkAvailability(newPage, account, form, i)
@@ -202,7 +202,7 @@ async function formAutoFiller(newPage, account, form, i, capture=false, test=fal
       else if (isAvailable === 'available') {
          break
       }
-      else if (retry >= maxRetry) {
+      else if (retry >= maxRetry && maxRetry != 0) {
          startTime = utils.elapsedTime(startTime, account, `Exceed max retry form [${i+1}]`)
          return false
       }
