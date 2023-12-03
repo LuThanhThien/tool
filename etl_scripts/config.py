@@ -1,0 +1,6 @@
+txt_country = "data/txt/countries.txt"
+txt_nations = "data/txt/nations.txt"
+csv_country = "data/countries.csv"
+csv_nation = "data/nations.csv"
+txt_customers = "data/txt/customers.txt"
+csv_customers = "data/customers.csv"

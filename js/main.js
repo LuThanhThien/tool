@@ -180,10 +180,13 @@ async function checkAvailability(page, account, form, i) {
 async function formAutoFiller(newPage, account, form, i, capture=false, test=false) { 
    let startTime = utils.elapsedTime(0)  
    const logPath = `${config.logFolderName}/${account.username}` // path to save log
-   const maxRetry = 1000
+   const maxRetry = 10000
    let retry = 0
    // check if form is available
    let isAvailable = await checkAvailability(newPage, account, form, i)
+   if (isAvailable === 'passed') {
+      return false
+   }
    while (isAvailable === 'upcoming') {
       await newPage.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });    // reload page
       isAvailable = await checkAvailability(newPage, account, form, i)

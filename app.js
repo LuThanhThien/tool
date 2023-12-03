@@ -3,8 +3,7 @@ const puppeteer = require('puppeteer')
 const { program } = require('commander');
 const utils = require('./js/utils')
 const config = require('./js/config')
-const { renitiate, initiate, logIn, checkAvailability, formAutoFiller, dropAll, distributeForms } = require('./js/main');
-const { start } = require('repl');
+const { renitiate, initiate, logIn, formAutoFiller, dropAll } = require('./js/main');
 
 
 // tool
@@ -26,12 +25,13 @@ async function tool(keyword='Hirabari', capture=false) {
       await utils.aborting(promisePage);
       await logIn(promisePage, account);
       if (capture) {
-         await promisePage.screenshot({ path: `${config.logFolderName}/0-login-end.png`, fullPage: true });
+         await promisePage.screenshot({ path: `${config.logFolderName}/${account.username}/login-end.png`, fullPage: true });
       }
       startTimeInner = utils.elapsedTime(startTimeAll, account, "Logged in account finished")
       return { account, browser: promiseBrowser, page: promisePage, isAvailable: true };
    }))
    
+
    // init browser
    const browser = await puppeteer.launch({ headless: 'new' })
    const page = await browser.newPage()
@@ -53,7 +53,7 @@ async function tool(keyword='Hirabari', capture=false) {
       }
    }
    startTimeAll = utils.elapsedTime(startTimeAll, null, `Found ${listForms.length} avaliable forms`)
-   console.log(listForms)
+   // console.log(listForms)
 
    
    // auto fill form
@@ -159,35 +159,12 @@ if (options.tool === true) {
    tool(options.keyword, options.capture)
 }
 if (options.drop === true) {
-   drop(options.capture)
+   console.log('Cannot perform this action in this version')
 }
+
 
 // node app --drop
 // node app --tool --capture --keyword='GY' 
-// node app --tool --capture --keyword=''
 // node app --tool --capture --keyword='Hirabari'
 // node app --tool --capture --keyword='Tosan'
 
-// [2023-11-28 05:30:04] [0.004s] [mg06p6@gmail.com] Auto fill form [1] begin: ＜12月12日(火) 12:45～13:30＞[平針]外国免許切替審査 Hirabari Exchanging Foreign Driver's License
-// [2023-11-28 05:30:04] [0.004s] [tthanh050206@gmail.com] Auto fill form [1] begin: ＜12月12日(火) 12:45～13:30＞[平針]外国免許切替審査 Hirabari Exchanging Foreign Driver's License
-// Error [TypeError]: Cannot read properties of null (reading 'click')
-//     at evaluate (evaluate at formAutoFiller (D:\code\tool\js\main.js:128:21), <anonymous>:3:15)
-//     at #evaluate (D:\code\tool\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:229:55)
-//     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-//     at async ExecutionContext.evaluate (D:\code\tool\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:126:16)
-//     at async IsolatedWorld.evaluate (D:\code\tool\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\IsolatedWorld.js:128:16)
-//     at async CdpFrame.evaluate (D:\code\tool\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Frame.js:363:20)
-//     at async CdpPage.evaluate (D:\code\tool\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Page.js:744:20)
-//     at async formAutoFiller (D:\code\tool\js\main.js:128:7)
-//     at async D:\code\tool\app.js:76:25
-//     at async Promise.all (index 1)
-// D:\code\tool\js\main.js:193
-//       startTime = utils.elapsedTime(startTime, account, ERROR FORM [${i+1}]: Form not found or data not valid - ${err})
-//                                     ^
-
-// ReferenceError: startTime is not defined
-//     at formAutoFiller (D:\code\tool\js\main.js:193:37)
-//     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-//     at async D:\code\tool\app.js:76:25
-//     at async Promise.all (index 1)
-//     at async tool (D:\code\tool\app.js:57:4)

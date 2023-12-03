@@ -1,4 +1,5 @@
 const config = require('./config');
+const fs = require('fs');
 
 // redirect to main page
 async function redirectMain(page) {
@@ -73,7 +74,6 @@ async function getAllNames(page) {
 
 
 // create log folder for logging
-const fs = require('fs')
 function makeDir(path) {
    fs.mkdirSync(path, (err) => {
       if (err) {
@@ -132,7 +132,7 @@ async function captureHTML(page, name='page.mhtml') {
    const minute = parseInt(matchDate[5], 10);
 
    // Create a date object from the target date
-   const targetDate = new Date(year, month, day, hour, minute);
+   const targetDate = new Date(year, month, day, 0, 0);
 
    // Get the current date and time
    const currentDate = new Date();
@@ -152,6 +152,7 @@ module.exports = {
    getAllNames,
    captureHTML,
    isTodayOrPast,
+   // readCustomerData,
  }
  
 

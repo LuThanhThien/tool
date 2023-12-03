@@ -6,16 +6,17 @@ const logFolderName = 'log'
 const filterKeyword = 'Tosan'
 const displayNumber = 50
 
+// const { readCustomerData } = require('./utils')
+
 // List of accounts
 const accounts = [
    // TEST
    { username: 'luthien5921@gmail.com', password: 'aichi@5921' },       
    { username: 'giathanh010101@gmail.com', password: 'aichi@5921'},   
-   // { username: 'piechipeach@gmail.com', password: 'aichi@5921'},     
-   // { username: 'piechipiechipeach@gmail.com', password: 'aichi@5921'},     
-   // { username: 'nqkhanhtoan@gmail.com', password: 'aichi@5921'},     
-
-   // TOSAN
+   { username: 'piechipiechipeach@gmail.com', password: 'aichi@5921'},     
+   { username: 'piechipeach@gmail.com', password: 'aichi@5921'},     
+   { username: 'nqkhanhtoan@gmail.com', password: 'aichi@5921'},     
+   // TOSAN anh Khoi
    // { username: 'benhosong@gmail.com', password: 'hoahong1234' },
    // { username: 'ngthanh96.04@gmail.com', password: 'hoahong1234' },
    // { username: 'trminh94.05@gmail.com', password: 'hoahong1234' },
@@ -28,20 +29,16 @@ const accounts = [
    // { username: 'vuvananh488@gmail.com', password: 'hoahong1234' },
    // { username: 'truongbui0425@gmail.com', password: 'hoahong1234' },
    // { username: 'tanvuongvo76@gmail.com', password: 'hoahong1234' },
-   // HIRABIRA
+   // TOSAN chi Truc
+   // { username: 'dieptram78@gmail.com', password: 'hoahong1234' },
    // { username: 'davidalaba00000@gmail.com', password: 'hoahong1234' },
    // { username: 'ble79037@gmail.com', password: 'hoahong1234' },
    // { username: 'benemmai380@gmail.com', password: 'hoahong1234' },
-]
-
-
-const idsTosan = {
-   okBtn: '', lastName: 'Pham', firstName: 'Thuy', dateBirth: '19950101', nation: 'Ninja', country: '愛知県', gender: '女性', phoneNumber: '0903692584',  checkBox: '202310917', confirmBtn1: '246813', confirmBtn1: '',
-}
-
-const idsHirabari = {
-   okBtn: '', lastName: 'Pham', firstName: 'Thuy', dateBirth: '19950101', nation: 'Ninja', country: '愛知県', gender: '女性', phoneNumber: '0903692584',  checkBox: '202310917', confirmBtn1: '246813', confirmBtn1: '',
-}
+   // TOSAN chi Tra
+   // { username: 'Jennygreen270295@gmail.com', password: 'hoahong1234' },
+   // { username: 'Nickpown0411@gmail.com', password: 'hoahong1234' },
+   // { username: 'Jamebrown0206@gmail.com', password: 'hoahong1234' },
+];
 
 const infoFake = {
    lastName: ['Nguyen', 'Tran', 'Le', 'Vo', 'Pham', 'Hoang', 'Huynh', 'Phan', 'Vu', 'Dang'],
@@ -58,6 +55,11 @@ const infoFake = {
    examinNumber: ['124369', '987654', '543219', '135792', '246813', '124369', '987654', '543219', '135792', '246813'],
 }
 
+const { load } = require('csv-load-sync');
+const customerData = load('./data/customers.csv');
+// console.log(customerData)
+
+
 // exports
 module.exports = {
    mainUrl,
@@ -68,7 +70,6 @@ module.exports = {
    logFolderName,
    filterKeyword,
    displayNumber,
-   idsTosan,
-   idsHirabari,
    infoFake,
-};
+   customerData,
+}
