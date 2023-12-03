@@ -4,14 +4,21 @@ const config = require('./config')
 // methods
 async function logIn(page, account) {
    let startTime = utils.elapsedTime(0)
-   // click login button
-   const innerHTMLBtn = await page.evaluate(() => {
-      const loginBtnHTML = '#pcLogin'
-      const loginBtn = document.querySelector(loginBtnHTML)
-      loginBtn.click()
-      return loginBtn ? loginBtn.textContent.trim() : 'Button not found'
-   })
-   await page.waitForNavigation()
+   // navigate to login page
+   try {
+      await page.goto(config.logInUrl)
+   }
+   catch (err) {
+      startTime = utils.elapsedTime(startTime, account, `ERROR: Cannot navigate to login page, retrying...`)
+      // click login button
+      const innerHTMLBtn = await page.evaluate(() => {
+         const loginBtnHTML = '#pcLogin'
+         const loginBtn = document.querySelector(loginBtnHTML)
+         loginBtn.click()
+         return loginBtn ? loginBtn.textContent.trim() : 'Button not found'
+      })
+      await page.waitForNavigation()
+   }
    startTime = utils.elapsedTime(startTime, account, `Navigate to login page finished`)
    
    // login
@@ -24,7 +31,6 @@ async function logIn(page, account) {
    await page.keyboard.press('Enter')
    await page.waitForNavigation()
    // console.log(page.url())
-   startTime = utils.elapsedTime(startTime, account, "Login finished")
 }
 
 
@@ -177,13 +183,16 @@ async function checkAvailability(page, account, form, i) {
 }
 
 
-async function formAutoFiller(newPage, account, form, i, capture=false, test=false) { 
+async function formAutoFiller(newPage, account, form, i, capture=false, test=false, info=null) { 
    let startTime = utils.elapsedTime(0)  
    const logPath = `${config.logFolderName}/${account.username}` // path to save log
    const maxRetry = 10000
    let retry = 0
    // check if form is available
    let isAvailable = await checkAvailability(newPage, account, form, i)
+   if (isAvailable === 'passed') {
+      return false
+   }
    while (isAvailable === 'upcoming') {
       await newPage.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });    // reload page
       isAvailable = await checkAvailability(newPage, account, form, i)
@@ -221,25 +230,52 @@ async function formAutoFiller(newPage, account, form, i, capture=false, test=fal
 
    // 2. fill form and click agree, go to confirm page
    try {
-      await newPage.evaluate((config, test) => {
+      await newPage.evaluate((config, test, info) => {
          if (test) {
             const lastNameHTML = "item[0].textData"
             const firstNameHTML = "item[0].textData2"
             const dateBirthHTML = "item[2].textData"
+            const gender = "item[3].selectData"
             const phoneNumberHTML = "item[4].textData"
             const schoolNameHTML = "item[5].textData"
             const dateGradHTML = "item[7].textData"
             const examinNumberHTML = "item[8].textData"
             const checkBoxHTML = "item[10].choiceList[0].checkFlag"
-
-            document.getElementsByName(firstNameHTML)[0].value = config.infoFake.firstName[Math.random() * config.infoFake.firstName.length | 0]
-            document.getElementsByName(lastNameHTML)[0].value = config.infoFake.lastName[Math.random() * config.infoFake.lastName.length | 0]
-            document.getElementsByName(dateBirthHTML)[0].value = config.infoFake.dateBirth[Math.random() * config.infoFake.dateBirth.length | 0]
-            document.getElementsByName(phoneNumberHTML)[0].value = config.infoFake.phoneNumber[Math.random() * config.infoFake.phoneNumber.length | 0]
-            document.getElementsByName(schoolNameHTML)[0].value = config.infoFake.schoolName[Math.random() * config.infoFake.schoolName.length | 0]
-            document.getElementsByName(dateGradHTML)[0].value = config.infoFake.dateGrad[Math.random() * config.infoFake.dateGrad.length | 0]
-            document.getElementsByName(examinNumberHTML)[0].value = config.infoFake.examinNumber[Math.random() * config.infoFake.examinNumber.length | 0]
-            // document.getElementsByName(checkBoxHTML)[0].checked = true
+            
+            if (info === null) {
+               document.getElementsByName(firstNameHTML)[0].value = config.infoFake.firstName[Math.random() * config.infoFake.firstName.length | 0]
+               document.getElementsByName(lastNameHTML)[0].value = config.infoFake.lastName[Math.random() * config.infoFake.lastName.length | 0]
+               document.getElementsByName(dateBirthHTML)[0].value = config.infoFake.dateBirth[Math.random() * config.infoFake.dateBirth.length | 0]
+               const radios = document.querySelectorAll(`input[name="${gender}"]`)
+               const fakeGender = config.infoFake.gender[Math.random() * config.infoFake.gender.length | 0]
+               if (fakeGender === 'M') {
+                  radios[0].checked = true
+               }
+               else {
+                  radios[1].checked = true
+               }
+               document.getElementsByName(phoneNumberHTML)[0].value = config.infoFake.phoneNumber[Math.random() * config.infoFake.phoneNumber.length | 0]
+               document.getElementsByName(schoolNameHTML)[0].value = config.infoFake.schoolName[Math.random() * config.infoFake.schoolName.length | 0]
+               document.getElementsByName(dateGradHTML)[0].value = config.infoFake.dateGrad[Math.random() * config.infoFake.dateGrad.length | 0]
+               document.getElementsByName(examinNumberHTML)[0].value = config.infoFake.examinNumber[Math.random() * config.infoFake.examinNumber.length | 0]
+               // document.getElementsByName(checkBoxHTML)[0].checked = true
+            }
+            else {
+               document.getElementsByName(firstNameHTML)[0].value = info.firstName
+               document.getElementsByName(lastNameHTML)[0].value = info.lastName
+               document.getElementsByName(dateBirthHTML)[0].value = info.dateBirth
+               const radios = document.querySelectorAll(`input[name="${gender}"]`)
+               if (info === 'M') {
+                  radios[0].checked = true
+               }
+               else {
+                  radios[1].checked = true
+               }
+               document.getElementsByName(phoneNumberHTML)[0].value = config.infoFake.phoneNumber[Math.random() * config.infoFake.phoneNumber.length | 0]
+               document.getElementsByName(schoolNameHTML)[0].value = config.infoFake.schoolName[Math.random() * config.infoFake.schoolName.length | 0]
+               document.getElementsByName(dateGradHTML)[0].value = config.infoFake.dateGrad[Math.random() * config.infoFake.dateGrad.length | 0]
+               document.getElementsByName(examinNumberHTML)[0].value = config.infoFake.examinNumber[Math.random() * config.infoFake.examinNumber.length | 0]
+            }
             const checkboxes = document.querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach((checkbox) => {
                   checkbox.checked = true;
@@ -251,18 +287,44 @@ async function formAutoFiller(newPage, account, form, i, capture=false, test=fal
             const dateBirthHTML = "item[1].textData"
             const nationHTML = "item[2].selectData"
             const countryHTML = "item[3].selectData"
+            const gender = "item[4].selectData"
             const phoneNumberHTML = "item[5].textData"
             // const checkBoxHTML = "item[10].choiceList[0].checkFlag"
 
-            document.getElementsByName(firstNameHTML)[0].value = config.infoFake.firstName[Math.random() * config.infoFake.firstName.length | 0]
-            document.getElementsByName(lastNameHTML)[0].value = config.infoFake.lastName[Math.random() * config.infoFake.lastName.length | 0]
-            document.getElementsByName(dateBirthHTML)[0].value = config.infoFake.dateBirth[Math.random() * config.infoFake.dateBirth.length | 0]
-            document.getElementsByName(phoneNumberHTML)[0].value = config.infoFake.phoneNumberHash[Math.random() * config.infoFake.phoneNumberHash.length | 0]
-            document.getElementsByName(nationHTML)[0].value = config.infoFake.nation[Math.random() * config.infoFake.nation.length | 0]
-            document.getElementsByName(countryHTML)[0].value = config.infoFake.country[Math.random() * config.infoFake.country.length | 0]
+            if (info === null) {
+               document.getElementsByName(firstNameHTML)[0].value = config.infoFake.firstName[Math.random() * config.infoFake.firstName.length | 0]
+               document.getElementsByName(lastNameHTML)[0].value = config.infoFake.lastName[Math.random() * config.infoFake.lastName.length | 0]
+               document.getElementsByName(dateBirthHTML)[0].value = config.infoFake.dateBirth[Math.random() * config.infoFake.dateBirth.length | 0]
+               document.getElementsByName(phoneNumberHTML)[0].value = config.infoFake.phoneNumberHash[Math.random() * config.infoFake.phoneNumberHash.length | 0]
+               document.getElementsByName(nationHTML)[0].value = config.infoFake.nation[Math.random() * config.infoFake.nation.length | 0]
+               document.getElementsByName(countryHTML)[0].value = config.infoFake.country[Math.random() * config.infoFake.country.length | 0]
+               const radios = document.querySelectorAll(`input[name="${gender}"]`)
+               const fakeGender = config.infoFake.gender[Math.random() * config.infoFake.gender.length | 0]
+               if (fakeGender === 'M') {
+                  radios[0].checked = true
+               }
+               else {
+                  radios[1].checked = true
+               }
+            }
+            else {
+               document.getElementsByName(firstNameHTML)[0].value = info.firstName
+               document.getElementsByName(lastNameHTML)[0].value = info.lastName
+               document.getElementsByName(dateBirthHTML)[0].value = info.dateBirth
+               document.getElementsByName(phoneNumberHTML)[0].value = info.phoneNumberHash
+               document.getElementsByName(nationHTML)[0].value = info.nation
+               document.getElementsByName(countryHTML)[0].value = info.country
+               const radios = document.querySelectorAll(`input[name="${gender}"]`)
+               if (info === 'M') {
+                  radios[0].checked = true
+               }
+               else {
+                  radios[1].checked = true
+               }
+            }
             document.querySelectorAll('input[type="checkbox"]')[0].checked = true
          }
-      }, config, test, i)
+      }, config, test, info)
 
       const focusSubmitHTML = `input[name='item[0].textData']`
       if (capture) {await newPage.screenshot({path: `${logPath}/form-[${i+1}]-draft.png`, fullPage: true})}

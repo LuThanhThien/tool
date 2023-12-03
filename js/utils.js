@@ -1,4 +1,5 @@
 const config = require('./config');
+const fs = require('fs');
 
 // redirect to main page
 async function redirectMain(page) {
@@ -73,7 +74,6 @@ async function getAllNames(page) {
 
 
 // create log folder for logging
-const fs = require('fs')
 function makeDir(path) {
    fs.mkdirSync(path, (err) => {
       if (err) {
@@ -157,7 +157,7 @@ module.exports = {
 
  
  // Example usage:
- const targetDate = '2023年11月30日 07時30分'; // Replace with your specific date
- const result = isTodayOrPast(targetDate);
+//  const targetDate = '2023年10月28日 07時30分'; // Replace with your specific date
+//  const result = isToday(targetDate);
  
- console.log(result); 
+//  console.log(result); 

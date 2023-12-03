@@ -1,0 +1,14 @@
+- Return false if form is closed
+- Keep running (reload) if target form is about to open
+
+
+running continously
+- log: log pictures named by date?
+- find upcomming forms in advanced 
+- find released forms from others accounts
+
+customer query app
+- where is the database of the customer?
+- in what form of data (csv, excel, database?)
+- offline data or online data?
+- what is the purpose of query app: extract inform for printing, for observe, for quick finding purpose, ...?
