@@ -35,7 +35,6 @@ const accounts = [
    // { username: 'davidalaba00000@gmail.com', password: 'hoahong1234' },
    // { username: 'ble79037@gmail.com', password: 'hoahong1234' },
    // { username: 'benemmai380@gmail.com', password: 'hoahong1234' },
-   // TOSAN chi Tra
    // { username: 'Jennygreen270295@gmail.com', password: 'hoahong1234' },
    // { username: 'Nickpown0411@gmail.com', password: 'hoahong1234' },
    // { username: 'Jamebrown0206@gmail.com', password: 'hoahong1234' },
